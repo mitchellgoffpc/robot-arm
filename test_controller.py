@@ -15,8 +15,8 @@ def get_stick_data(data, left):
   return stick_horizontal, stick_vertical
 
 while True:
-    report = gamepad.read(64)
-    if report:
-        # print(' '.join(f'{x:03d}' for x in report))
-        # print(get_stick_data(report, True), get_stick_data(report, False))
-        print(report[5] >> 7 == 1, report[3] >> 7 == 1)
+  report = gamepad.read(64)
+  if report:
+    # print(' '.join(f'{x:03d}' for x in report))
+    # print(get_stick_data(report, True), get_stick_data(report, False))
+    print(report[5] >> 7 == 1, report[3] >> 7 == 1)
