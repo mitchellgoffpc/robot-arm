@@ -29,10 +29,12 @@ def get_board_state(board):
 
 
 class PositionDataset(Dataset):
-  def __init__(self, transform):
-    self.transform = transform
+  def __init__(self, train=True, transform=None):
+    games_to_pick = [1, 2] if train else [0]
+    self.transform = transform or lambda x: x
     self.data_dir = Path(__file__).parent / 'data/positions'
     self.image_names = sorted(set(x.name.rsplit('-', 1)[0] for x in self.data_dir.iterdir() if x.name.endswith('.jpg')))
+    self.image_names = [x for x in self.image_names if any(x.startswith(f'{game:03d}-') for game in games_to_pick)]
 
     self.games = {i: [] for i in range(10)}
     for i, game in enumerate(read_pgns(self.data_dir.parent / '2022.pgn')):
@@ -63,29 +65,38 @@ def train():
     T.GaussianBlur(11),
   ])
 
-  dataset = PositionDataset(transform)
-  dataloader = DataLoader(dataset, batch_size=32)
+  train_dataset = PositionDataset(train=True, transform=transform)
+  test_dataset = PositionDataset(train=False, transform=None)
+  train_dataloader = DataLoader(train_dataset, batch_size=16, num_workers=0, shuffle=True)
+  test_dataloader = DataLoader(test_dataset, batch_size=16, num_workers=0)
 
-  # import matplotlib.pyplot as plt
-  # for i, (image1, image2, label) in enumerate(dataset):
-  #   if i >= 3: break
-  #   _, ax = plt.subplots(1, 2, figsize=(12, 6))
-  #   ax[0].imshow(image1)
-  #   ax[1].imshow(image2)
-  #   plt.show()
-  # exit()
+  device = (
+    torch.device('cuda') if torch.cuda.is_available() else
+    torch.device('mps') if torch.backends.mps.is_available() else
+    torch.device('cpu'))
 
-  device = torch.device('cpu')
-  model = PositionModel(output_size=64 * 13)
+  model = PositionModel(output_size=64 * 13).to(device)
   optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
 
   for epoch in range(10):
-    for image1, image2, labels in tqdm(dataloader):
+    train_loss, total = 0, 0
+    for image1, image2, labels in (pbar := tqdm(train_dataloader)):
       preds = model(image1, image2)
-      loss = F.cross_entropy(preds, labels)
+      loss = F.cross_entropy(preds, labels.to(device))
       loss.backward()
       optimizer.step()
       optimizer.zero_grad()
+      train_loss += loss.item()
+      total += 1
+      pbar.set_description(f"Train loss: {train_loss / total:.3f}")
+
+    test_loss, total = 0, 0
+    for image1, image2, labels in (pbar := tqdm(test_dataloader)):
+      with torch.no_grad():
+        preds = model(image1, image2)
+      test_loss += F.cross_entropy(preds, labels.to(device)).item()
+      total += 1
+      pbar.set_description(f"Test loss: {test_loss / total:.3f}")
 
 
 if __name__ == '__main__':
