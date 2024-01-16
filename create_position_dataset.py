@@ -12,6 +12,7 @@ import pygame.camera
 from pathlib import Path
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
+from helpers import read_pgns
 
 FILL_COLOR = '#cc0000cc'
 WEBCAM_NAME = 'Logitech Webcam C930e'
@@ -19,16 +20,6 @@ PHOTO_ANGLES = [
   [43.30, 34.50, 121.60, 92.00, -43.20, 234.20],
   [-55.72, 41.4, 123.13, 275.02, -58.07, 105.51],
 ]
-
-def read_pgns(pgn_fn):
-  game = []
-
-  with open(pgn_fn) as f:
-    for line in f:
-      game.append(line)
-      if line.startswith('1.'):
-        yield chess.pgn.read_game(io.StringIO(''.join(game)))
-        game = []
 
 
 class ChessGui(tk.Frame):
