@@ -15,10 +15,10 @@ time.sleep(0.5)
 closed = motor.position
 open = motor.position + 30
 
-A1 = np.array([146, 137, 385, -125.614064, 6.815906, -124.336712])
-H1 = np.array([146, -161, 385, -125.614064, 6.815906, -124.336712])
-H8 = np.array([434.6, -161, 385, -125.614064, 6.815906, -124.336712])
-A8 = np.array([434.6, 137, 385, -125.614064, 6.815906, -124.336712])
+H8 = np.array([146, 137, 385, -125.614064, 6.815906, -124.336712])
+A8 = np.array([146, -161, 385, -125.614064, 6.815906, -124.336712])
+A1 = np.array([434.6, -161, 385, -125.614064, 6.815906, -124.336712])
+H1 = np.array([434.6, 137, 385, -125.614064, 6.815906, -124.336712])
 CENTER = np.array([288, 0, 385, -125.614064, 6.815906, -124.336712])
 DOWN = np.array([0, 0, -100, 0, 0, 0])
 MVACC = 180
@@ -39,7 +39,7 @@ for i in range(8):
     positions[i, j, 1] = A1[1] + ((H1[1] - A1[1]) * i / 7)
     positions[i, j, 2:] = A1[2:]
 
-for i, idx in enumerate([(3, 6), (3, 4)]):
+for i, idx in enumerate([(4, 1), (4, 3)]):
   pos = positions[idx]
   arm.set_position_aa(CENTER.tolist(), speed=MOVE_SPEED, mvacc=MVACC, wait=True)
   arm.set_position_aa(pos.tolist(), speed=MOVE_SPEED, mvacc=MVACC, wait=True)
