@@ -29,7 +29,8 @@ def get_board_state(board):
 
 
 class PositionDataset(Dataset):
-  def __init__(self):
+  def __init__(self, transform):
+    self.transform = transform
     self.data_dir = Path(__file__).parent / 'data/positions'
     self.image_names = sorted(set(x.name.rsplit('-', 1)[0] for x in self.data_dir.iterdir() if x.name.endswith('.jpg')))
 
@@ -44,10 +45,12 @@ class PositionDataset(Dataset):
     return len(self.image_names)
 
   def __getitem__(self, idx):
-    image1 = np.array(Image.open(self.data_dir / f'{self.image_names[idx]}-0.jpg'))
-    image2 = np.array(Image.open(self.data_dir / f'{self.image_names[idx]}-1.jpg'))
-    image1 = cv2.resize(image1, (256, 256))
-    image2 = cv2.resize(image2, (256, 256))
+    image1 = Image.open(self.data_dir / f'{self.image_names[idx]}-0.jpg')
+    image2 = Image.open(self.data_dir / f'{self.image_names[idx]}-1.jpg')
+    image1 = np.array(self.transform(image1))
+    image2 = np.array(self.transform(image2))
+    image1 = cv2.resize(image1[:400, 50:-50], (256, 256))
+    image2 = cv2.resize(image2[10:-50, 100:-40], (256, 256))
 
     game_idx, move_idx = self.image_names[idx].split('-')
     board = self.games[int(game_idx)][int(move_idx)]
@@ -55,8 +58,22 @@ class PositionDataset(Dataset):
 
 
 def train():
-  dataset = PositionDataset()
+  transform = T.Compose([
+    T.ColorJitter(1, 1),
+    T.GaussianBlur(11),
+  ])
+
+  dataset = PositionDataset(transform)
   dataloader = DataLoader(dataset, batch_size=32)
+
+  # import matplotlib.pyplot as plt
+  # for i, (image1, image2, label) in enumerate(dataset):
+  #   if i >= 3: break
+  #   _, ax = plt.subplots(1, 2, figsize=(12, 6))
+  #   ax[0].imshow(image1)
+  #   ax[1].imshow(image2)
+  #   plt.show()
+  # exit()
 
   device = torch.device('cpu')
   model = PositionModel(output_size=64 * 13)
